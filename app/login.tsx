@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        padding: 20, // Adds breathing room on the sides
+        padding: 20,
         backgroundColor: "#fff",
     },
     title: {
