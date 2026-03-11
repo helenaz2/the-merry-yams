@@ -13,7 +13,7 @@ export default function Index() {
 
       <Pressable
         style={styles.createAccountButton}
-        onPress={() => router.push("/choose-account")}
+        onPress={() => router.push("/signup")}
       >
         <Text style={styles.buttonText}>Create Account</Text>
       </Pressable>
