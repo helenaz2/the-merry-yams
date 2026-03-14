@@ -1,37 +1,76 @@
-import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
+import { useState } from "react";
+import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function ScannerPage() {
+export default function App() {
+  const [facing, setFacing] = useState<CameraType>("back");
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
+  const [scannedData, setScannedData] = useState<string | null>(null);
+
+  if (!permission) {
+    return <View />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>
+          We need your permission to show the camera
+        </Text>
+        <Button onPress={requestPermission} title="Grant permission" />
+      </View>
+    );
+  }
+
+  function toggleCameraFacing() {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  }
+
+  function handleBarcodeScanned({
+    type,
+    data,
+  }: {
+    type: string;
+    data: string;
+  }) {
+    setScanned(true);
+    setScannedData(`Type: ${type}\nData: ${data}`);
+  }
+
   return (
     <View style={styles.container}>
-      <Pressable
-        style={styles.backButton}
-        onPress={() => router.push("/individual-workspace")}
-      >
-        <Text style={styles.backArrow}>⌃</Text>
-      </Pressable>
+      <CameraView
+        style={styles.camera}
+        facing={facing}
+        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+      />
 
-      <Pressable
-        style={styles.barcodeScanner}
-        onPress={() => router.push("/scanned-info")}
-      >
-        <Text style={styles.boxText}>Barcode Scanner</Text>
-      </Pressable>
+      <View style={styles.overlay}>
+        <Text style={styles.scanText}>
+          {scannedData
+            ? scannedData
+            : "Point the camera at a barcode or QR code"}
+        </Text>
 
-      <Pressable
-        style={styles.qrScanner}
-        onPress={() => router.push("/scanned-info")}
-      >
-        <Text style={styles.boxText}>QR Scanner</Text>
-      </Pressable>
+        {scanned && (
+          <TouchableOpacity
+            style={styles.scanAgainButton}
+            onPress={() => {
+              setScanned(false);
+              setScannedData(null);
+            }}
+          >
+            <Text style={styles.scanAgainText}>Scan Again</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
-      <Pressable
-        style={styles.uploadButton}
-        onPress={() => router.push("/scanned-info")}
-      >
-        <Text style={styles.uploadIcon}>◇</Text>
-        <Text style={styles.uploadText}>Upload Image</Text>
-      </Pressable>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+          <Text style={styles.text}>Flip Camera</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -39,83 +78,52 @@ export default function ScannerPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EEEEEE",
-    position: "relative",
   },
-
-  backButton: {
+  message: {
+    textAlign: "center",
+    paddingBottom: 10,
+  },
+  camera: {
+    flex: 1,
+  },
+  overlay: {
     position: "absolute",
-    top: 95,
-    left: 18,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
+    top: 80,
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 16,
+    borderRadius: 10,
+  },
+  scanText: {
+    color: "white",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  scanAgainButton: {
+    marginTop: 12,
+    alignSelf: "center",
+    backgroundColor: "white",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  scanAgainText: {
+    color: "black",
+    fontWeight: "600",
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: 64,
+    width: "100%",
+    paddingHorizontal: 64,
+  },
+  button: {
     alignItems: "center",
   },
-
-  backArrow: {
-    fontSize: 26,
-    color: "#000000",
-    transform: [{ rotate: "90deg" }],
-    lineHeight: 30,
-  },
-
-  barcodeScanner: {
-    position: "absolute",
-    top: 174,
-    left: 32,
-    width: 337,
-    height: 81,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#000000",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  qrScanner: {
-    position: "absolute",
-    top: 365,
-    left: 100,
-    width: 202,
-    height: 202,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#000000",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  boxText: {
+  text: {
     fontSize: 24,
-    fontWeight: "400",
-    color: "#000000",
-  },
-
-  uploadButton: {
-    position: "absolute",
-    top: 635,
-    left: 51,
-    width: 306,
-    height: 40,
-    backgroundColor: "#BBBBBB",
-    borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-
-  uploadIcon: {
-    fontSize: 22,
-    color: "#000000",
-  },
-
-  uploadText: {
-    fontSize: 22,
-    fontWeight: "400",
-    color: "#000000",
+    fontWeight: "bold",
+    color: "white",
   },
 });
