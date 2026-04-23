@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 export default function Signup() {
@@ -11,9 +12,12 @@ export default function Signup() {
            <TextInput style={styles.input} placeholder="Password" secureTextEntry={true} placeholderTextColor="#999" />
 
 
-           <Pressable style={styles.signUpButton}>
+           <Pressable style={styles.signUpButton}
+            onPress={() => router.replace("/all-work-spaces")}
+           >
                <Text style={styles.signUpText}>Sign Up</Text>
            </Pressable>
+           
    </View>
    );
 }
