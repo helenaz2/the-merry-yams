@@ -16,13 +16,13 @@ export default function Login() {
       <Text style={styles.emailLabel}>Email</Text>
 
       <View style={styles.passwordInput}>
-        <Text style={styles.inputText}>Enter Password</Text>
+        <Text style={styles.inputText}>Enter Email</Text>
       </View>
 
       <Text style={styles.passwordLabel}>Password</Text>
 
       <View style={styles.emailInput}>
-        <Text style={styles.inputText}>Enter Email</Text>
+        <Text style={styles.inputText}>Enter Password</Text>
       </View>
 
       <Pressable
