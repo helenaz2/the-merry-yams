@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function App() {
+export default function ScannerPage() {
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -37,10 +37,11 @@ export default function App() {
   }) {
     setScanned(true);
     setScannedData(`Type: ${type}\nData: ${data}`);
+
     router.push({
-    pathname: "/scanned-info",
-    params: { sku: data }
-  });
+      pathname: "/scanned-info",
+      params: { sku: data },
+    });
   }
 
   return (
