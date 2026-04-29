@@ -21,11 +21,7 @@ interface InventoryItem {
 export default function IndividualWorkspace() {
   const { id } = useLocalSearchParams();
   const [workspaceName, setWorkspaceName] = useState("Space Name");
-  const [inventory, setInventory] = useState<InventoryItem[]>([
-    { id: "1", sku: "MWZX88888_B_XL", num: 3 },
-    { id: "2", sku: "MWZX88888_B_L", num: 5 },
-    { id: "3", sku: "MWZX88888_B_M", num: 2 },
-  ]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"sku" | "num">("sku");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
