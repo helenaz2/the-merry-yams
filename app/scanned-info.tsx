@@ -20,6 +20,7 @@ export default function ScannedInfo() {
 // make sure they show up on the app too
 function checkProduct() {
     throw new Error('implementing function soon.');
+    
 
 }
 
