@@ -1,4 +1,5 @@
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -36,6 +37,10 @@ export default function App() {
   }) {
     setScanned(true);
     setScannedData(`Type: ${type}\nData: ${data}`);
+    router.push({
+    pathname: "/scanned-info",
+    params: { sku: data }
+  });
   }
 
   return (

@@ -136,18 +136,26 @@ export default function Login() {
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </Pressable>
 
-          {/* Login Button */}
-          <Pressable
-            style={[styles.loginButton, loading && styles.disabledButton]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.loginButtonText}>Log In</Text>
-            )}
-          </Pressable>
+      <Text style={styles.title}>Log In</Text>
+
+      <Text style={styles.emailLabel}>Email</Text>
+
+      <View style={styles.passwordInput}>
+        <Text style={styles.inputText}>Enter Password</Text>
+      </View>
+
+      <Text style={styles.passwordLabel}>Password</Text>
+
+      <View style={styles.emailInput}>
+        <Text style={styles.inputText}>Enter Email</Text>
+      </View>
+
+      <Pressable
+        style={styles.loginButton}
+        onPress={() => router.push("/all-work-spaces")}
+      >
+        <Text style={styles.loginButtonText}>Log In</Text>
+      </Pressable>
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
