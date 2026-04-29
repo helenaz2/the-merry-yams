@@ -1,40 +1,171 @@
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+    Alert,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TouchableOpacity,
+} from "react-native";
+import { supabase } from "./lib/supabase";
 
 export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  async function handleLogin() {
+    // Validate inputs
+    if (!email.trim()) {
+      Alert.alert("Missing Info", "Please enter your email address.");
+      return;
+    }
+
+    if (!password) {
+      Alert.alert("Missing Info", "Please enter your password.");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      if (error.message.includes("Invalid login credentials")) {
+        Alert.alert(
+          "Login Failed",
+          "Invalid email or password. Please try again.",
+          [
+            { text: "OK" },
+            { text: "Forgot Password?", onPress: () => router.push("/forgot-password") }
+          ]
+        );
+      } else {
+        Alert.alert("Login Error", error.message);
+      }
+      return;
+    }
+
+    if (data.session) {
+      console.log("User logged in:", data.user);
+      router.replace("/all-work-spaces");
+    }
+  }
+
   return (
-    <View style={styles.container}>
-      <Pressable
-        style={styles.forgotPassword}
-        onPress={() => router.push("/forgot-password")}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.forgotText}>Forgot Password</Text>
-      </Pressable>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.breadcrumb}>Landing / Log In</Text>
+          <Text style={styles.title}>Log In</Text>
+        </View>
 
-      <Text style={styles.title}>Log In</Text>
+        {/* Form */}
+        <View style={styles.form}>
+          {/* Email Field */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="your@email.com"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+            />
+          </View>
 
-      <Text style={styles.emailLabel}>Email</Text>
+          {/* Password Field */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Enter your password"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Text style={styles.eyeIcon}>{showPassword ? "--" : "👁️"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
-      <View style={styles.passwordInput}>
-        <Text style={styles.inputText}>Enter Password</Text>
-      </View>
+          {/* Forgot Password Link */}
+          <Pressable
+            style={styles.forgotPassword}
+            onPress={() => router.push("/forgot-password")}
+            disabled={loading}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </Pressable>
 
-      <Text style={styles.passwordLabel}>Password</Text>
+          {/* Login Button */}
+          <Pressable
+            style={[styles.loginButton, loading && styles.disabledButton]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.loginButtonText}>Log In</Text>
+            )}
+          </Pressable>
 
-      <View style={styles.emailInput}>
-        <Text style={styles.inputText}>Enter Email</Text>
-      </View>
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.divider} />
+          </View>
 
-      <Pressable
-        style={styles.loginButton}
-        onPress={() => router.push("/all-work-spaces")}
-      >
-        <Text style={styles.loginButtonText}>Log In</Text>
-      </Pressable>
-
-      <View style={styles.leftDivider} />
-      <View style={styles.rightDivider} />
-    </View>
+          {/* Sign Up Link */}
+          <View style={styles.signUpContainer}>
+            <Text style={styles.signUpText}>Don't have an account? </Text>
+            <Pressable onPress={() => router.push("/signup")} disabled={loading}>
+              <Text style={styles.signUpLink}>Sign Up</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -42,124 +173,120 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#EEEEEE",
-    position: "relative",
   },
-
-  forgotPassword: {
-    position: "absolute",
-    top: 81,
-    left: 241,
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
-
-  forgotText: {
-    fontSize: 18,
-    fontWeight: "400",
-    color: "rgba(0, 0, 0, 0.7)",
-    textDecorationLine: "underline",
+  header: {
+    marginTop: 60,
+    marginBottom: 40,
   },
-
+  breadcrumb: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 8,
+  },
   title: {
-    position: "absolute",
-    top: 119,
-    left: 161,
-    width: 80,
-    height: 33,
-    fontSize: 30,
-    fontWeight: "400",
-    color: "#000000",
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#333",
   },
-
-  emailLabel: {
-    position: "absolute",
-    top: 198,
-    left: 47,
-    width: 48,
-    height: 20,
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#000000",
+  form: {
+    flex: 1,
   },
-
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "#DDDDDD",
+    height: 50,
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDDDDD",
+    height: 50,
+  },
   passwordInput: {
-    position: "absolute",
-    top: 221,
-    left: 47,
-    width: 307,
-    height: 34,
-    backgroundColor: "#D1D1D1",
-    borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
-    justifyContent: "center",
-    paddingHorizontal: 12,
+    flex: 1,
+    padding: 12,
+    fontSize: 14,
   },
-
-  passwordLabel: {
-    position: "absolute",
-    top: 278,
-    left: 48,
-    width: 143,
-    height: 20,
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#000000",
+  eyeButton: {
+    padding: 12,
   },
-
-  emailInput: {
-    position: "absolute",
-    top: 302,
-    left: 47,
-    width: 307,
-    height: 34,
-    backgroundColor: "#D1D1D1",
-    borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-
-  inputText: {
+  eyeIcon: {
     fontSize: 16,
-    fontWeight: "400",
-    color: "#555555",
   },
-
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginBottom: 30,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: "#007AFF",
+    fontWeight: "500",
+  },
   loginButton: {
-    position: "absolute",
-    top: 373,
-    left: 84,
-    width: 213,
-    height: 40,
-    backgroundColor: "#BBBBBB",
-    borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
+    backgroundColor: "#007AFF",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  disabledButton: {
+    backgroundColor: "#ccc",
+  },
+  loginButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#DDDDDD",
+  },
+  dividerText: {
+    color: "#999",
+    paddingHorizontal: 16,
+    fontSize: 14,
+  },
+  signUpContainer: {
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 10,
+    marginBottom: 30,
   },
-
-  loginButtonText: {
-    fontSize: 20,
-    fontWeight: "400",
-    color: "#000000",
+  signUpText: {
+    fontSize: 14,
+    color: "#666",
   },
-
-  leftDivider: {
-    position: "absolute",
-    top: 614,
-    left: 21,
-    width: 149,
-    borderTopWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.5)",
-  },
-
-  rightDivider: {
-    position: "absolute",
-    top: 614,
-    left: 219,
-    width: 165,
-    borderTopWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.5)",
+  signUpLink: {
+    fontSize: 14,
+    color: "#007AFF",
+    fontWeight: "bold",
   },
 });
