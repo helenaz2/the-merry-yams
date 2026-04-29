@@ -1,21 +1,23 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-export default function Index() {
+export default function Landing() {
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Syncrate</Text>
+      
+      <Pressable
+        style={styles.signUpButton}
+        onPress={() => router.push("/choose-account")}
+      >
+        <Text style={styles.buttonText}>Sign Up</Text>
+      </Pressable>
+
       <Pressable
         style={styles.loginButton}
         onPress={() => router.push("/login")}
       >
-        <Text style={styles.buttonText}>Log In</Text>
-      </Pressable>
-
-      <Pressable
-        style={styles.createAccountButton}
-        onPress={() => router.push("/signup")}
-      >
-        <Text style={styles.buttonText}>Create Account</Text>
+        <Text style={styles.loginButtonText}>Log In</Text>
       </Pressable>
     </View>
   );
@@ -24,40 +26,42 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#EEEEEE",
+    padding: 20,
   },
-
-  loginButton: {
-    position: "absolute",
-    top: 249,
-    left: 48,
-    width: 306,
-    height: 40,
-    backgroundColor: "purple",
-    borderWidth: 1,
-    borderColor: "purple",
-    borderRadius: 5,
-    justifyContent: "center",
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 40,
+  },
+  signUpButton: {
+    backgroundColor: "#007AFF",
+    padding: 16,
+    borderRadius: 8,
     alignItems: "center",
+    width: "100%",
+    marginBottom: 16,
   },
-
-  createAccountButton: {
-    position: "absolute",
-    top: 337,
-    left: 48,
-    width: 306,
-    height: 40,
-    backgroundColor: "#BBBBBB",
-    borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
   buttonText: {
+    color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
-    color: "#000000",
+    fontWeight: "bold",
+  },
+  loginButton: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#007AFF",
+  },
+  loginButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

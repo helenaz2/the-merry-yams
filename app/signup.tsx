@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
     Alert,
@@ -9,13 +9,17 @@ import {
     View,
     ActivityIndicator,
     TouchableOpacity,
-    ScrollView,           // ADD THIS
-    KeyboardAvoidingView, // ADD THIS
-    Platform,             // ADD THIS
+    ScrollView,
+    KeyboardAvoidingView,
+    Platform,
 } from "react-native";
 import { supabase } from "./lib/supabase";
 
 export default function Signup() {
+  // Get the account type from navigation params
+  const params = useLocalSearchParams();
+  const accountType = params.accountType as string;
+  
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +43,12 @@ export default function Signup() {
   };
 
   async function handleSignUp() {
+    // Validate account type
+    if (!accountType) {
+      Alert.alert("Error", "No account type selected. Please go back and choose an account type.");
+      return;
+    }
+    
     // Validate display name
     if (!displayName.trim()) {
       Alert.alert("Missing info", "Please enter your display name.");
@@ -93,6 +103,7 @@ export default function Signup() {
       options: {
         data: {
           display_name: displayName.trim(),
+          account_type: accountType, // Save account type to user metadata
         },
       },
     });
@@ -137,6 +148,16 @@ export default function Signup() {
     }
   }
 
+  // Get display text for account type
+  const getAccountTypeDisplay = () => {
+    if (accountType === "warehouse-owner") {
+      return "Warehouse Owner";
+    } else if (accountType === "merchant-seller") {
+      return "Merchant Seller";
+    }
+    return "";
+  };
+
   return (
     <KeyboardAvoidingView 
       style={styles.container}
@@ -148,11 +169,25 @@ export default function Signup() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Go Back Button */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+
         {/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.landingText}>Landing / Sign Up</Text>
           <Text style={styles.title}>Create Account</Text>
         </View>
+
+        {/* Account Type Badge */}
+        {accountType && (
+          <View style={styles.accountTypeBadge}>
+            <Text style={styles.accountTypeText}>
+              Signing up as: {getAccountTypeDisplay()}
+            </Text>
+          </View>
+        )}
 
         {/* Form Section */}
         <View style={styles.form}>
@@ -275,9 +310,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
+  backButton: {
+    padding: 8,
+    marginBottom: 8,
+    alignSelf: "flex-start",
+  },
+  backText: {
+    fontSize: 24,
+    color: "#007AFF",
+  },
   header: {
-    marginTop: 60,
-    marginBottom: 40,
+    marginBottom: 20,
   },
   landingText: {
     fontSize: 14,
@@ -288,6 +331,20 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     color: "#333",
+  },
+  accountTypeBadge: {
+    backgroundColor: "#F0F8FF",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 24,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#007AFF",
+  },
+  accountTypeText: {
+    color: "#007AFF",
+    fontSize: 14,
+    fontWeight: "500",
   },
   form: {
     flex: 1,
