@@ -2,12 +2,21 @@ import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
 export default function ScannerPage() {
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scannedData, setScannedData] = useState<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      // resets scanning so user doesn't have to click scan again to scan another barcode
+      setScanned(false);
+      setScannedData(null);
+    }, [])
+  );
 
   if (!permission) {
     return <View />;
@@ -35,6 +44,7 @@ export default function ScannerPage() {
     type: string;
     data: string;
   }) {
+    if (scanned) return;
     setScanned(true);
     setScannedData(`Type: ${type}\nData: ${data}`);
 
@@ -78,6 +88,7 @@ export default function ScannerPage() {
         </TouchableOpacity>
       </View>
     </View>
+
   );
 }
 
