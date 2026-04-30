@@ -1,69 +1,7 @@
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { supabase } from "./lib/supabase";
-
-type InventoryItem = {
-  id: string;
-  sku: string;
-  quantity: number;
-};
-
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function IndividualWorkspace() {
-  const { id } = useLocalSearchParams(); // The unique Workspace ID
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [workspaceName, setWorkspaceName] = useState("Space Name");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  // 2. FETCH LOGIC
-  // Refresh data every time we navigate back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      fetchWorkspaceInfo();
-      fetchInventory();
-    }, [id])
-  );
-
-  const fetchWorkspaceInfo = async () => {
-    const { data } = await supabase
-      .from('workspaces')
-      .select('name')
-      .eq('id', id)
-      .single();
-    if (data) setWorkspaceName(data.name);
-  };
-
-  const fetchInventory = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('inventory')
-      .select('id, sku, quantity')
-      .eq('workspace_id', id);
-
-    if (data) {
-      // Mapping Supabase 'quantity' to 'num' for our display
-      setInventory(data);
-    }
-    setLoading(false);
-  };
-
-  // 3. FILTERING
-  const filteredInventory = inventory.filter(item =>
-    item.sku.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // 4. LIST ITEM COMPONENT
-  const renderInventoryItem = ({ item }: { item: InventoryItem }) => (
-    <Pressable 
-      style={styles.inventoryRow}
-      onPress={() => router.push({ pathname: "/scanned-info", params: { sku: item.sku } })}
-    >
-      <Text style={styles.skuCell}>{item.sku}</Text>
-      <Text style={styles.numCell}>{item.quantity}</Text>
-    </Pressable>
-  );
   return (
     <View style={styles.container}>
       <View style={styles.fixedBoxArea}>
@@ -103,28 +41,7 @@ export default function IndividualWorkspace() {
 
         <View style={styles.divider} />
       </View>
-      {/* TABLE HEADERS (The SKU / NUM labels) */}
-      <View style={styles.columnHeaders}>
-        <Text style={styles.headerLabel}>SKU</Text>
-        <Text style={styles.headerLabel}>NUM</Text>
-      </View>
-
-      {/* INVENTORY LIST */}
-      {loading && inventory.length === 0 ? (
-        <ActivityIndicator style={{ marginTop: 50 }} />
-      ) : (
-        <FlatList
-          data={filteredInventory}
-          keyExtractor={(item) => item.id}
-          renderItem={renderInventoryItem}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No inventory items found</Text>
-          }
-        />
-      )}
     </View>
-    
   );
 }
 
@@ -273,47 +190,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: "#000000",
   },
-  // --- NEW STYLES FOR THE TABLE ---
-  columnHeaders: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 35,
-    paddingVertical: 10,
-    backgroundColor: '#CCCCCC',
-  },
-  headerLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  listContainer: {
-    paddingBottom: 40,
-  },
-  inventoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 35,
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-    backgroundColor: '#FFFFFF',
-  },
-  skuCell: {
-    fontSize: 16,
-    color: '#333',
-    flex: 2,
-  },
-  numCell: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-    flex: 1,
-    textAlign: 'right',
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
-    color: '#999',
-  }
 });
