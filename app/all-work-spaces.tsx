@@ -1,13 +1,13 @@
 import { router } from "expo-router";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-    FlatList,
-    TouchableOpacity,
-    RefreshControl,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "./lib/supabase";
 import Sidebar from "./side-bar";
@@ -15,6 +15,11 @@ import Sidebar from "./side-bar";
 interface Workspace {
   id: string;
   name: string;
+  organizing_price: number;
+  storage_price: number;
+  retailer: string;
+  description: string;
+  owner_id: string;
   created_at: string;
 }
 
@@ -32,33 +37,38 @@ export default function AllWorkSpaces() {
   }, []);
 
   const getUserInfo = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setEmail(user.email || "");
-        const name = user.user_metadata?.display_name || user.email?.split('@')[0] || "User";
-        setDisplayName(name);
-      } else {
-        // Default values if no user is logged in
-        setDisplayName("Guest");
-        setEmail("guest@example.com");
-      }
-    } catch (error) {
-      console.error("Error getting user:", error);
-      setDisplayName("User");
-      setEmail("user@email.com");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      setEmail(user.email || "");
+      setDisplayName(
+        user.user_metadata?.display_name ||
+          user.email?.split("@")[0] ||
+          "User"
+      );
+    } else {
+      setDisplayName("Guest");
+      setEmail("guest@example.com");
     }
   };
 
   const fetchWorkspaces = async () => {
     try {
-      // Your fetch logic here
-      setWorkspaces([
-        { id: "1", name: "Space 1", created_at: new Date().toISOString() },
-        { id: "2", name: "Space 2", created_at: new Date().toISOString() },
-      ]);
+      const { data, error } = await supabase
+        .from("workspaces")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      console.log("Fetched workspaces:", data);
+      console.log("Fetch error:", error);
+
+      if (error) throw error;
+
+      setWorkspaces(data || []);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching workspaces:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,16 +80,40 @@ export default function AllWorkSpaces() {
     fetchWorkspaces();
   };
 
-  const renderWorkspace = ({ item, index }: { item: Workspace; index: number }) => (
+  const renderWorkspace = ({
+    item,
+    index,
+  }: {
+    item: Workspace;
+    index: number;
+  }) => (
     <TouchableOpacity
-      style={[styles.workspaceCard, index % 2 === 0 ? styles.cardLeft : styles.cardRight]}
+      style={[
+        styles.workspaceCard,
+        index % 2 === 0 ? styles.cardLeft : styles.cardRight,
+      ]}
       onPress={() => router.push(`/individual-workspace?id=${item.id}`)}
       activeOpacity={0.7}
     >
       <View style={styles.cardIcon}>
         <Text style={styles.cardIconText}>📦</Text>
       </View>
+
+      <Text style={styles.spaceNumber}>Space {index + 1}</Text>
       <Text style={styles.workspaceName}>{item.name}</Text>
+
+      {item.retailer ? (
+        <Text style={styles.workspaceDetail}>Retailer: {item.retailer}</Text>
+      ) : null}
+
+      <Text style={styles.workspaceDetail}>
+        Organizing: ${item.organizing_price}
+      </Text>
+
+      <Text style={styles.workspaceDetail}>
+        Storage: ${item.storage_price}/day
+      </Text>
+
       <Text style={styles.workspaceDate}>
         {new Date(item.created_at).toLocaleDateString()}
       </Text>
@@ -88,14 +122,18 @@ export default function AllWorkSpaces() {
 
   return (
     <View style={styles.container}>
-      {/* Header with Menu Button */}
       <View style={styles.header}>
-        <Pressable style={styles.menuButton} onPress={() => setSidebarVisible(true)}>
+        <Pressable
+          style={styles.menuButton}
+          onPress={() => setSidebarVisible(true)}
+        >
           <View style={styles.moreLine} />
           <View style={styles.moreLine} />
           <View style={styles.moreLine} />
         </Pressable>
+
         <Text style={styles.title}>My Work Spaces</Text>
+
         <Pressable
           style={styles.addButton}
           onPress={() => router.push("/create-work-space")}
@@ -106,7 +144,6 @@ export default function AllWorkSpaces() {
 
       <View style={styles.divider} />
 
-      {/* Workspaces Grid */}
       {workspaces.length === 0 && !loading ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🏭</Text>
@@ -114,6 +151,7 @@ export default function AllWorkSpaces() {
           <Text style={styles.emptyText}>
             Create your first workspace to start organizing your inventory
           </Text>
+
           <Pressable
             style={styles.createButton}
             onPress={() => router.push("/create-work-space")}
@@ -136,7 +174,6 @@ export default function AllWorkSpaces() {
         />
       )}
 
-      {/* Sidebar - Make sure all props are passed */}
       <Sidebar
         isVisible={sidebarVisible}
         onClose={() => setSidebarVisible(false)}
@@ -233,11 +270,22 @@ const styles = StyleSheet.create({
   cardIconText: {
     fontSize: 24,
   },
+  spaceNumber: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#007AFF",
+    marginBottom: 4,
+  },
   workspaceName: {
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
     marginBottom: 4,
+  },
+  workspaceDetail: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
   },
   workspaceDate: {
     fontSize: 10,
