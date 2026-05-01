@@ -1,46 +1,194 @@
-import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { useState, useEffect } from "react";
+import {
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+    FlatList,
+    TouchableOpacity,
+    TextInput,
+    Alert,
+} from "react-native";
+import { supabase } from "./lib/supabase";
+
+interface InventoryItem {
+  id: string;
+  sku: string;
+  num: number;
+}
 
 export default function IndividualWorkspace() {
+  const { id } = useLocalSearchParams();
+  const [workspaceName, setWorkspaceName] = useState("Space Name");
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"sku" | "num">("sku");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  useEffect(() => {
+    fetchWorkspaceInfo();
+    fetchInventory();
+  }, [id]);
+
+  const fetchWorkspaceInfo = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('workspaces')
+        .select('name')
+        .eq('id', id)
+        .single();
+
+      if (data) {
+        setWorkspaceName(data.name);
+      }
+    } catch (error) {
+      console.error("Error fetching workspace:", error);
+    }
+  };
+
+  const fetchInventory = async () => {
+    try {
+      // Fetch inventory from your database
+      // const { data, error } = await supabase
+      //   .from('inventory')
+      //   .select('*')
+      //   .eq('workspace_id', id);
+      // if (data) setInventory(data);
+    } catch (error) {
+      console.error("Error fetching inventory:", error);
+    }
+  };
+
+  const handleStartScanning = () => {
+    router.push("/scanner-page");
+  };
+
+  const handleUploadCSV = () => {
+    Alert.alert("Upload CSV", "This feature will allow you to upload inventory via CSV file.");
+  };
+
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+  };
+
+  const handleSort = () => {
+    Alert.alert(
+      "Sort By",
+      "Choose sort option",
+      [
+        { text: "SKU (A-Z)", onPress: () => { setSortBy("sku"); setSortOrder("asc"); } },
+        { text: "SKU (Z-A)", onPress: () => { setSortBy("sku"); setSortOrder("desc"); } },
+        { text: "Quantity (Low to High)", onPress: () => { setSortBy("num"); setSortOrder("asc"); } },
+        { text: "Quantity (High to Low)", onPress: () => { setSortBy("num"); setSortOrder("desc"); } },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
+  const handleDownloadCSV = () => {
+    Alert.alert("Download CSV", "Your inventory data will be downloaded as a CSV file.");
+  };
+
+  const getSortedAndFilteredInventory = () => {
+    let filtered = [...inventory];
+    
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter(item =>
+        item.sku.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Sort
+    filtered.sort((a, b) => {
+      if (sortBy === "sku") {
+        return sortOrder === "asc"
+          ? a.sku.localeCompare(b.sku)
+          : b.sku.localeCompare(a.sku);
+      } else {
+        return sortOrder === "asc"
+          ? a.num - b.num
+          : b.num - a.num;
+      }
+    });
+    
+    return filtered;
+  };
+
+  const renderInventoryItem = ({ item }: { item: InventoryItem }) => (
+    <View style={styles.inventoryRow}>
+      <Text style={styles.skuCell}>{item.sku}</Text>
+      <Text style={styles.numCell}>{item.num}</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <View style={styles.fixedBoxArea}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.push("/all-work-spaces")}
-        >
-          <Text style={styles.backArrow}>⌃</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>←</Text>
         </Pressable>
-
-        <Pressable style={styles.infoButton}>
-          <Text style={styles.infoIcon}>i</Text>
-        </Pressable>
-
-        <Text style={styles.title}>Space Name</Text>
-
-        <Pressable
-          style={styles.scanButton}
-          onPress={() => router.push("/scanner-page")}
-        >
-          <Text style={styles.cameraIcon}>◇</Text>
-          <Text style={styles.scanText}>Start Scanning</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.uploadButton}
-          onPress={() => router.push("/matched-positions")}
-        >
-          <Text style={styles.uploadIcon}>◇</Text>
-          <Text style={styles.uploadText}>Upload CSV</Text>
-        </Pressable>
-
-        <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>◇</Text>
-          <Text style={styles.searchPlaceholder}>Search SKU</Text>
-        </View>
-
-        <View style={styles.divider} />
+        <Text style={styles.spaceName}>{workspaceName}</Text>
+        <View style={styles.placeholder} />
       </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actionContainer}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleStartScanning}>
+          <Text style={styles.actionButtonText}>Start Scanning</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionButton} onPress={handleUploadCSV}>
+          <Text style={styles.actionButtonText}>Upload CSV</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search SKU"
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+      </View>
+
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Header Row with Sort and Download */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.sortButton} onPress={handleSort}>
+          <Text style={styles.headerButtonText}>Sort By</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadCSV}>
+          <Text style={styles.headerButtonText}>Download CSV</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Column Headers */}
+      <View style={styles.columnHeaders}>
+        <Text style={styles.skuHeader}>SKU</Text>
+        <Text style={styles.numHeader}>NUM</Text>
+      </View>
+
+      {/* Inventory List */}
+      <FlatList
+        data={getSortedAndFilteredInventory()}
+        renderItem={renderInventoryItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No inventory items found</Text>
+          </View>
+        }
+      />
     </View>
   );
 }
@@ -50,144 +198,141 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#EEEEEE",
   },
-
-  fixedBoxArea: {
-    width: "100%",
-    height: 384,
-    position: "relative",
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
   },
-
   backButton: {
-    position: "absolute",
-    top: 58,
-    left: 12,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
+    padding: 8,
+  },
+  backText: {
+    fontSize: 24,
+    color: "#007AFF",
+  },
+  spaceName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  placeholder: {
+    width: 40,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 16,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: "center",
   },
-
-  backArrow: {
-    fontSize: 26,
-    color: "#000000",
-    lineHeight: 30,
-    transform: [{ rotate: "90deg" }],
-  },
-
-  infoButton: {
-    position: "absolute",
-    top: 59,
-    left: 330,
-    width: 32,
-    height: 32,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  infoIcon: {
-    fontSize: 22,
-    color: "#000000",
+  actionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
     fontWeight: "600",
   },
-
-  title: {
-    position: "absolute",
-    top: 92,
-    left: 117,
-    width: 168,
-    height: 33,
-    fontSize: 30,
-    fontWeight: "400",
-    color: "#000000",
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
-
-  scanButton: {
-    position: "absolute",
-    top: 158,
-    left: 56,
-    width: 306,
-    height: 40,
-    backgroundColor: "#BBBBBB",
+  searchInput: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
     borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
+    borderColor: "#DDDDDD",
+    height: 45,
   },
-
-  cameraIcon: {
-    fontSize: 22,
-    color: "#000000",
-  },
-
-  scanText: {
-    fontSize: 22,
-    fontWeight: "400",
-    color: "#000000",
-  },
-
-  uploadButton: {
-    position: "absolute",
-    top: 222,
-    left: 56,
-    width: 306,
-    height: 40,
-    backgroundColor: "#BBBBBB",
-    borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-
-  uploadIcon: {
-    fontSize: 22,
-    color: "#000000",
-  },
-
-  uploadText: {
-    fontSize: 22,
-    fontWeight: "400",
-    color: "#000000",
-  },
-
-  searchBox: {
-    position: "absolute",
-    top: 286,
-    left: 55,
-    width: 307,
-    height: 40,
-    backgroundColor: "#D1D1D1",
-    borderWidth: 1,
-    borderColor: "#AAAAAA",
-    borderRadius: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    gap: 20,
-  },
-
-  searchIcon: {
-    fontSize: 20,
-    color: "#000000",
-  },
-
-  searchPlaceholder: {
-    fontSize: 22,
-    fontWeight: "400",
-    color: "rgba(0,0,0,0.6)",
-  },
-
   divider: {
-    position: "absolute",
-    top: 348,
-    left: 20,
-    width: 362,
+    marginHorizontal: 20,
     borderTopWidth: 1,
-    borderColor: "#000000",
+    borderColor: "#DDDDDD",
+    marginVertical: 8,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "#F5F5F5",
+  },
+  sortButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  downloadButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  headerButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  columnHeaders: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "#E0E0E0",
+    borderBottomWidth: 1,
+    borderBottomColor: "#DDDDDD",
+  },
+  skuHeader: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    flex: 2,
+  },
+  numHeader: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    flex: 1,
+    textAlign: "right",
+  },
+  listContainer: {
+    paddingHorizontal: 20,
+  },
+  inventoryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEEEEE",
+  },
+  skuCell: {
+    fontSize: 14,
+    color: "#333",
+    flex: 2,
+  },
+  numCell: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
+    textAlign: "right",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#999",
   },
 });
