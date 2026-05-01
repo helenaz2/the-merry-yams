@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -61,9 +62,6 @@ export default function AllWorkSpaces() {
         .select("*")
         .order("created_at", { ascending: true });
 
-      console.log("Fetched workspaces:", data);
-      console.log("Fetch error:", error);
-
       if (error) throw error;
 
       setWorkspaces(data || []);
@@ -73,6 +71,57 @@ export default function AllWorkSpaces() {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const deleteWorkspace = async (id: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("workspaces")
+      .delete()
+      .eq("id", id)
+      .select();
+
+    if (error) {
+      console.error("Supabase delete error:", error);
+      Alert.alert("Error", error.message);
+      return;
+    }
+
+    console.log("Deleted workspace:", data);
+
+    if (!data || data.length === 0) {
+      Alert.alert(
+        "Not deleted",
+        "Supabase did not delete this workspace. Check Row Level Security policies."
+      );
+      return;
+    }
+
+    setWorkspaces((prev) =>
+      prev.filter((workspace) => workspace.id !== id)
+    );
+  } catch (error) {
+    console.error("Error deleting workspace:", error);
+    Alert.alert("Error", "Could not delete workspace.");
+  }
+};
+
+  const confirmDeleteWorkspace = (id: string) => {
+    Alert.alert(
+      "Delete Workspace",
+      "Are you sure you want to delete this workspace?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteWorkspace(id),
+        },
+      ]
+    );
   };
 
   const onRefresh = () => {
@@ -95,6 +144,16 @@ export default function AllWorkSpaces() {
       onPress={() => router.push(`/individual-workspace?id=${item.id}`)}
       activeOpacity={0.7}
     >
+      <Pressable
+        style={styles.deleteButton}
+        onPress={(event) => {
+          event.stopPropagation();
+          confirmDeleteWorkspace(item.id);
+        }}
+      >
+        <Text style={styles.deleteButtonText}>×</Text>
+      </Pressable>
+
       <View style={styles.cardIcon}>
         <Text style={styles.cardIconText}>📦</Text>
       </View>
@@ -246,11 +305,31 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
+    paddingTop: 34,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    position: "relative",
+  },
+  deleteButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  deleteButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 20,
   },
   cardLeft: {
     marginRight: 4,
